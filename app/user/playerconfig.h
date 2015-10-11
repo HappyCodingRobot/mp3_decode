@@ -7,10 +7,23 @@ Define the access point name and its password here.
 #define AP_NAME "HOMEAP"
 #define AP_PASS "01234567890"
 
+/*
+{icecast.omroep.nl:80/3fm-sb-mp3}
+{pub7.di.fm:80/di_classiceurodance}
+{5.35.255.134:9955/}
+*/
+
+/* Test mit 'darker radio' HTTP stream */
+#if 0
+#define PLAY_SERVER "5.35.255.134"
+#define PLAY_PATH "/"
+#define PLAY_PORT 9955
+#endif
+
 /* Define stream URL here. For example, the URL to the MP3 stream of a certain Dutch radio station
 is http://icecast.omroep.nl/3fm-sb-mp3 . This translates of a server name of "icecast.omroep.nl"
 and a path of "/3fm-sb-mp3". The port usually is 80 (the standard HTTP port) */
-#if 1
+#if 0
 #define PLAY_SERVER "icecast.omroep.nl"
 #define PLAY_PATH "/3fm-sb-mp3"
 #define PLAY_PORT 80
@@ -18,7 +31,7 @@ and a path of "/3fm-sb-mp3". The port usually is 80 (the standard HTTP port) */
 /*
 Here's a DI.fm stream
 */
-#if 0
+#if 1
 #define PLAY_SERVER "pub7.di.fm"
 #define PLAY_PATH "/di_classiceurodance"
 #define PLAY_PORT 80
@@ -97,5 +110,8 @@ the server isn't very close to your ESP, this _will_ lead to stutters in the pla
 MP3 stream! */
 #define FAKE_SPI_BUFF
 
+
+/*UDP command port to change settings during runtime*/
+#define UDP_CMD_PORT 15678
 
 #endif

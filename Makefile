@@ -16,13 +16,13 @@ XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 #PATH := $(XTENSA_TOOLS_ROOT);$(PATH)
 
 # select which tools to use as compiler, librarian and linker
-CC := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
-AR := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
-LD := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
-NM := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-nm
-CPP = $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-cpp
-OBJCOPY = $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
-OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
+CC := xtensa-lx106-elf-gcc
+AR := xtensa-lx106-elf-ar
+LD := xtensa-lx106-elf-gcc
+NM := xtensa-lx106-elf-nm
+CPP = xtensa-lx106-elf-cpp
+OBJCOPY = xtensa-lx106-elf-objcopy
+OBJDUMP := xtensa-lx106-elf-objdump
 CCFLAGS += -std=gnu90 -Wno-pointer-sign -mno-target-align -mno-serialize-volatile -foptimize-register-move
 #
 # -Os -O2 -Wall -Wno-pointer-sign -mno-target-align -mno-serialize-volatile -foptimize-register-move
@@ -39,8 +39,8 @@ BLANKBIN := ./$(FIRMWAREDIR)/blank.bin
 BLANKADDR := 0x7E000
 
 SDK_TOOLS	?= c:/Espressif/utils
-#ESPTOOL		?= $(SDK_TOOLS)/esptool
-ESPTOOL		?= C:/Python27/python.exe $(CWD)esptool.py
+ESPTOOL		?= $(ESP_HOME)/esptool/esptool
+#ESPTOOL		?= esptool.py
 
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
@@ -196,7 +196,7 @@ $(foreach lib,$(GEN_LIBS),$(eval $(call MakeLibrary,$(basename $(lib)))))
 
 $(foreach image,$(GEN_IMAGES),$(eval $(call MakeImage,$(basename $(image)))))
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET)
+INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET) -I $(PDIR)extra_include
 INCLUDES += -I $(PDIR)include/lwip -I $(PDIR)include/lwip/ipv4 -I $(PDIR)include/lwip/ipv6 -I $(PDIR)include/espressif
 
 #PDIR := ../$(PDIR)

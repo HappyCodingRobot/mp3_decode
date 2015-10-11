@@ -19,6 +19,9 @@
 #include "lwip/sockets.h"
 #include "lwip/dns.h"
 #include "lwip/netdb.h"
+#include "lwip/udp.h"
+#include "lwip/ip_addr.h"       // opt?
+#include "lwip/pbuf.h"          // opt?
 
 #include "../mad/mad.h"
 #include "../mad/stream.h"
@@ -27,12 +30,14 @@
 #include "i2s_freertos.h"
 #include "iram_buf.h"
 #include "spiram_fifo.h"
+#include "user_main.h"
 #include "playerconfig.h"
 
 
-const char streamHost[]=PLAY_SERVER;
-const char streamPath[]=PLAY_PATH;
-const int streamPort=PLAY_PORT;
+char streamHost[25]=PLAY_SERVER;
+char streamPath[26]=PLAY_PATH;
+int streamPort=PLAY_PORT;
+int streamNewAddr=0;
 
 //Priorities of the reader and the decoder thread. Higher = higher prio.
 #define PRIO_READER 11
@@ -354,8 +359,9 @@ void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
 			
 			t=(t+1)&255;
 			if (t==0) printf("Buffer fill %d, DMA underrun ct %d, buff underrun ct %d\n", spiRamFifoFill(), (int)i2sGetUnderrunCnt(), bufUnderrunCt);
-		} while (n>0);
+		} while (n>0 && streamNewAddr==0);
 		close(fd);
+                streamNewAddr=0;
 		printf("Connection closed.\n");
 	}
 }
@@ -390,8 +396,6 @@ void ICACHE_FLASH_ATTR tskconnect(void *pvParameters) {
 	vTaskDelete(NULL);
 }
 
-//We need this to tell the OS we're running at a higher clock frequency.
-extern void os_update_cpu_frequency(int mhz);
 
 void ICACHE_FLASH_ATTR user_init(void) {
 	//Tell hardware to run at 160MHz instead of 80MHz
@@ -405,8 +409,16 @@ void ICACHE_FLASH_ATTR user_init(void) {
 #endif
 	
 	//Set the UART to 230400 baud
-	UART_SetBaudrate(0, 230400);
-
+	//UART_SetBaudrate(0, 230400);
+        UART_SetBaudrate(0, 115200);
+        
+        //setup UDP server
+        udpio_init();
+        
+        //set DHCP name
+        //extern struct netif *netif_default;
+        //netif_set_hostname(netif_default, "ESP-RADIO");
+        
 	//Initialize the SPI RAM chip communications and see if it actually retains some bytes. If it
 	//doesn't, warn user.
 	if (!spiRamFifoInit()) {
@@ -416,4 +428,96 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	printf("\n\nHardware initialized. Waiting for network.\n");
 	xTaskCreate(tskconnect, "tskconnect", 200, NULL, 3, NULL);
 }
+
+
+
+
+// Callback routine for incomping UDP packets
+static void ICACHE_FLASH_ATTR udp_recv_cb(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, u16_t port) {
+    int cnt=0;
+    int portPos=0,pathPos=0;
+    if (p != NULL) {
+        char *packet = strdup(p->payload);      // make local work copy, necessary to free() ?
+        //int pl = strlen(packet)-1;            // length without '\0'
+        int pl=0;
+        while (*(packet+pl)!='}') {              // find packet length marker '}'
+            pl++;
+        }
+        
+        //if (pl > 0) {
+        if (pl > 6) {
+            //printf("#received: [%s]\n",packet);
+            // do something with the packet
+            // copy url and path, set port ..
+            // expected format: {host:port/streamPath}
+            if (*packet=='{' && *(packet+pl)=='}') {
+                
+                while (*(packet+cnt)!=':' && cnt<pl) {
+                    cnt++;
+                }
+                if (cnt<pl) {
+                    portPos = cnt+1;
+                } else {
+                    portPos = 0;
+                }
+                
+                while (*(packet+cnt)!='/' && cnt<pl) {
+                  cnt++;
+                }
+                if (cnt<pl) {
+                    pathPos = cnt;
+                } else {
+                    pathPos = 0;
+                }
+                
+                if ((portPos<=25) && (pl-pathPos<=26) && portPos>0 && pathPos>0) {
+                    memcpy(streamHost,packet+1,portPos-2);
+                    streamHost[portPos-2] = 0x00;
+                    memcpy(streamPath,packet+pathPos,pl-pathPos);
+                    streamPath[pl-pathPos] = 0x00;
+                    //printf("[%s]\n",streamHost);
+                    //printf("[%s]\n",streamPath);
+                    *(packet+pl-pathPos) = 0x00;
+                    streamPort = atoi(packet+portPos);
+                    //printf("[%i]\n",streamPort);
+                    /* and send OK */
+                    struct udp_pcb *pcb = udp_new();
+                    struct pbuf *pb = pbuf_alloc(PBUF_TRANSPORT, 2 + 1, PBUF_RAM);
+                    strcpy(pb->payload, "OK");
+                    int err = udp_sendto(pcb, pb, addr, port);
+                    if (err != 0) printf(" Err=%d ", err);
+                    pbuf_free(pb);
+                    udp_remove(pcb);
+                    /* set new stream addr available */
+                    streamNewAddr = 1;
+                }
+            }
+        }
+        free(packet);   // ??? necessary ?
+    }
+    pbuf_free(p);
+}
+
+/*
+// UDP send routine
+int ICACHE_FLASH_ATTR udpio_send(const char *buf, int port) {
+    struct udp_pcb *pcb = udp_new();
+    struct pbuf *pb = pbuf_alloc(PBUF_TRANSPORT, strlen(buf) + 1, PBUF_RAM);
+
+    strcpy(pb->payload, buf);
+    int err = udp_sendto(pcb, pb, IP_ADDR_BROADCAST, port);
+    if (err != 0) printf(" Err=%d ", err);
+
+    pbuf_free(pb);
+    udp_remove(pcb);
+} */
+
+// Initialize UDP io by creating the Queue and registering the receive callback
+void ICACHE_FLASH_ATTR udpio_init(void) {
+    struct udp_pcb *pcb = udp_new();
+
+    udp_bind(pcb, IP_ADDR_ANY, UDP_CMD_PORT);
+    udp_recv(pcb, udp_recv_cb, NULL);
+}
+
 

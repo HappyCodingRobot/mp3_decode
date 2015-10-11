@@ -41,8 +41,8 @@ CCFLAGS += -Os
 #	-fdata-sections -ffast-math -fmerge-all-constants -fomit-frame-pointer -funroll-loops \
 
 
-TARGET_LDFLAGS =		\
-	-nostdlib		\
+TARGET_LDFLAGS = \
+	-nostdlib \
 	-Wl,-EL \
 	-Wl--relax \
 	--longcalls \
@@ -56,7 +56,7 @@ ifeq ($(FLAVOR),release)
 endif
 
 COMPONENTS_eagle.app.v6 = \
-    main/libaddmmain.a \
+	main/libaddmmain.a \
 	user/libuser.a \
 	mad/libmad.a \
 	driver/libdriver.a
@@ -65,25 +65,25 @@ COMPONENTS_eagle.app.v6 = \
 LINKFLAGS_eagle.app.v6 = \
 	-L../lib        \
 	-nostdlib	\
-    -T$(LD_FILE)   \
-	-Wl,--no-check-sections	\
+	-T$(LD_FILE)   \
+	-Wl,--no-check-sections \
 	-Wl,-Map -Wl,$(@:.out=.map) \
-    -u call_user_start	\
-    -Wl,--wrap=Cache_Read_Enable \
-    -Wl,-static						\
-	-Wl,--start-group					\
+	-u call_user_start \
+	-Wl,--wrap=Cache_Read_Enable \
+	-Wl,-static \
+	-Wl,--start-group \
 	-fdata-sections -ffast-math -fmerge-all-constants -fomit-frame-pointer -funroll-loops \
 	-lminic	\
 	-lmgcc	\
 	-lhal	\
 	-lmphy	\
 	-lpp	\
-	-lnet80211	\
+	-lnet80211 \
 	-lwpa	\
 	-lmain	\
-	-lfreertos	\
+	-lfreertos \
 	-llwip	\
-	$(DEP_LIBS_eagle.app.v6)					\
+	$(DEP_LIBS_eagle.app.v6) \
 	-Wl,--end-group
 
 DEPENDS_eagle.app.v6 = \
