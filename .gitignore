@@ -7,20 +7,20 @@
 *.out
 *.elf
 *.lss
-*.bin
 *.map
 *.o
+*.old
 *.bak*
 
-#IDE files to ignore (Netbeans, Eclipse)
+# pathes
+.output
+
+# IDE files to ignore (Netbeans, Eclipse)
 nbproject/private/
 .classpath
 .project
 .settings
 .dep
-
-#ignore generated .class files
-*.class
 
 #except this file
 !.gitignore
