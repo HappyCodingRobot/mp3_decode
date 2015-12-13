@@ -4,13 +4,15 @@
 import sys      #for exit
 import socket   #for sockets
 
-#UDP_HOST = "192.168.178.39"
-UDP_HOST = "ESP_9BCCEF"
+UDP_HOST = "" # IP or ESP hostname
 UDP_PORT = 15678
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.settimeout(3.0)
 
+if len(sys.argv) > 1:
+    UDP_HOST = sys.argv[1]
+print 'sending to host:',UDP_HOST
 
 while 1:
     msg = raw_input('Enter message to send : ')
