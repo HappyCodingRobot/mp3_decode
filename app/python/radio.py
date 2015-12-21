@@ -11,9 +11,10 @@ import sys      #for exit
 import socket   #for sockets
 import os
 
-#UDP_HOST = "192.168.xxx.xxx"
+#UDP_HOST = "192.168.178.39"
 #UDP_HOST = 'ESP-9BCCEF'     # esp01-module (verbaut)
-UDP_HOST = 'ESP_9E7CBD'     # esp07-module (Steckbrett)
+UDP_HOST = 'ESP_9E7CBD'     # esp07-module (Steckbrett, mit SPI-RAM)
+#UDP_HOST = 'ESP_9E7E16'     # esp07-module (Steckbrett)
 UDP_PORT = 15678
 
 serverList = {1:['ClassicEurodance','{pub7.di.fm:80/di_classiceurodance}'],
@@ -21,12 +22,13 @@ serverList = {1:['ClassicEurodance','{pub7.di.fm:80/di_classiceurodance}'],
               3:['Alternative NL','{icecast.omroep.nl:80/3fm-sb-mp3}'],
               4:['Darkwave Radio','{darkwaveradio.com:8000/autodj}'],
               5:['ebm-Radio','{www.ebm-radio.org:7000/}'],
-# hostname too long:
+# hostname zu lang:
 #              6:['PsyTrancePowerRadio','{streaming201.radionomy.com:80/PsyTrance-Power-radio}'],
 #              7:['','{streaming201.radionomy.com:80/Goth-N-Metal}'],
               6:['PsyTrancePowerRadio','{31.12.64.201:80/PsyTrance-Power-radio}'],
               7:['Goth-n-Metal','{31.12.64.201:80/Goth-N-Metal}'],
-              8:['auraton - harsh noise','{stream.laut.fm:80/_a_u_r_a_t_o_n_}']}
+              8:['auraton - harsh noise','{stream.laut.fm:80/_a_u_r_a_t_o_n_}'],
+              9:['DEBUG - local stream','{192.168.178.35:8000/}']}
 
 def SendStation(msg):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

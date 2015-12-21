@@ -2,6 +2,15 @@
 #define __USER_MAIN_H__
 
 
+typedef enum {
+    ODrawInit = 0,
+    ODrawConnected,
+    ODrawStation,
+    ODrawRate,
+    ODrawBuffer
+} OLED_messages;
+
+
 /** external functions */
 
 //We need this to tell the OS we're running at a higher clock frequency.
@@ -65,6 +74,11 @@ void ICACHE_FLASH_ATTR tskconnect(void *pvParameters);
 
 void ICACHE_FLASH_ATTR user_init(void);
 
+#if defined(USE_DISPLAY)
+void ICACHE_FLASH_ATTR do_draw(OLED_messages msg, char *str);
+#else
+#define do_draw(a,b) 
+#endif
 
 
 #endif // __USER_MAIN_H__

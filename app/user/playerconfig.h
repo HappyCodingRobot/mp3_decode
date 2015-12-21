@@ -6,6 +6,8 @@ Define the access point name and its password here.
 */
 //#define AP_NAME "HOMEAP"
 //#define AP_PASS "01234567890"
+#define AP_NAME "Maschinenzimmer"
+#define AP_PASS "3747541222109123"
 
 /*
 {icecast.omroep.nl:80/3fm-sb-mp3}
@@ -23,7 +25,7 @@ Define the access point name and its password here.
 /* Define stream URL here. For example, the URL to the MP3 stream of a certain Dutch radio station
 is http://icecast.omroep.nl/3fm-sb-mp3 . This translates of a server name of "icecast.omroep.nl"
 and a path of "/3fm-sb-mp3". The port usually is 80 (the standard HTTP port) */
-#if 0
+#if 1
 #define PLAY_SERVER "icecast.omroep.nl"
 #define PLAY_PATH "/3fm-sb-mp3"
 #define PLAY_PORT 80
@@ -31,7 +33,7 @@ and a path of "/3fm-sb-mp3". The port usually is 80 (the standard HTTP port) */
 /*
 Here's a DI.fm stream
 */
-#if 1
+#if 0
 #define PLAY_SERVER "pub7.di.fm"
 #define PLAY_PATH "/di_classiceurodance"
 #define PLAY_PORT 80
@@ -98,7 +100,7 @@ R/C lowpass filter, eg 100 ohm in series with the output, 100NF from there to gr
 This will clock the ESP at 160MHz; the delta-sigma process eats just a bit too much
 CPU power to run stable at 80MHz without causing DMA dropouts.
 */
-#define DELTA_SIGMA_HACK
+//#define DELTA_SIGMA_HACK
 
 /*While a large (tens to hundreds of K) buffer is necessary for Internet streams, on a
 quiet network and with a direct connection to the stream server, you can get away with
@@ -113,5 +115,12 @@ MP3 stream! */
 
 /*UDP command port to change settings during runtime*/
 #define UDP_CMD_PORT 15678
+
+/*Use ssd1306 i2c display*/
+#define USE_DISPLAY
+
+/*Force 160MHz clock. TODO: test if it helps against DMA underruns*/
+#define USE_160MHZ
+
 
 #endif

@@ -5,7 +5,7 @@ import sys      #for exit
 import socket   #for sockets
 
 #UDP_HOST = "192.168.178.39"
-UDP_HOST = "ESP_9BCCEF" 
+UDP_HOST = "ESP_9BCCEF"
 UDP_PORT = 15678
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

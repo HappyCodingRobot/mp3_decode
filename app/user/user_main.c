@@ -30,14 +30,23 @@
 #include "i2s_freertos.h"
 #include "iram_buf.h"
 #include "spiram_fifo.h"
-#include "user_main.h"
 #include "playerconfig.h"
+#include "user_config.h"
+#include "user_main.h"
 
+#include "i2c.h"
+#include "ssd1306.h"
 
 char streamHost[25]=PLAY_SERVER;
 char streamPath[26]=PLAY_PATH;
 int streamPort=PLAY_PORT;
 int streamNewAddr=0;
+
+// Message strings
+char STR_init[]="Initialising..";
+char STR_connected[]="Connected to:";
+char STR_playing[]="Playing:";
+char STR_buf[15];
 
 //Priorities of the reader and the decoder thread. Higher = higher prio.
 #define PRIO_READER 11
@@ -199,6 +208,8 @@ void ICACHE_FLASH_ATTR set_dac_sample_rate(int rate) {
 	if (rate==oldRate) return;
 	oldRate=rate;
 	printf("Rate %d\n", rate);
+        sprintf(STR_buf, "Rate %d", rate);
+        do_draw(ODrawRate, STR_buf);
 	i2sSetRate(rate);
 }
 
@@ -346,6 +357,7 @@ void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
 	int c = 0;
 	while(1) {
 		fd = openConn(streamHost, streamPath);
+                do_draw(ODrawStation, NULL);
 		printf("Reading into SPI RAM FIFO...\n");
 		do {
 			n = read(fd, wbuf, sizeof(wbuf));
@@ -358,7 +370,12 @@ void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
 			}
 			
 			t=(t+1)&255;
-			if (t==0) printf("Buffer fill %d, DMA underrun ct %d, buff underrun ct %d\n", spiRamFifoFill(), (int)i2sGetUnderrunCnt(), bufUnderrunCt);
+			if (t==0) {
+                          printf("Buffer fill %d, DMA underrun ct %d, buff underrun ct %d\n", spiRamFifoFill(), (int)i2sGetUnderrunCnt(), bufUnderrunCt);
+                          //sprintf(STR_buf, "Buffer fill %d  ", spiRamFifoFill());
+                          //do_draw(ODrawBuffer, STR_buf);
+                          //-> takes to much time during playback: os_wait() between bits..
+                        }
 		} while (n>0 && streamNewAddr==0);
 		close(fd);
                 streamNewAddr=0;
@@ -386,7 +403,10 @@ void ICACHE_FLASH_ATTR tskconnect(void *pvParameters) {
 		sprintf(config->password, AP_PASS);
 		wifi_station_set_config(config);
 	}
-	wifi_station_connect();
+	//wifi_station_connect();
+        if (wifi_station_connect()) {
+          do_draw(ODrawConnected, config->ssid);
+        }
 	free(config);
 
 	//Fire up the reader task. The reader task will fire up the MP3 decoder as soon
@@ -403,7 +423,7 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	//MP3 decoding at 80MHz. It, however, seems to help with receiving data over long and/or unstable
 	//links, so you may want to turn it on. Also, the delta-sigma code seems to need a bit more speed
 	//than the other solutions to keep up with the output samples, so it's also enabled there.
-#if defined(DELTA_SIGMA_HACK)
+#if defined(DELTA_SIGMA_HACK) || defined(USE_160MHZ)
 	SET_PERI_REG_MASK(0x3ff00014, BIT(0));
 	os_update_cpu_frequency(160);
 #endif
@@ -411,6 +431,17 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	//Set the UART to 230400 baud
 	//UART_SetBaudrate(0, 230400);
         UART_SetBaudrate(0, 115200);
+        
+        // init i2c OLED
+#if defined(USE_DISPLAY)
+        i2c_init();
+        if (ssd1306_init(0)) {
+                printf("# OLED init success!\r\n");
+                do_draw(ODrawInit, STR_init);
+        } else {
+                printf("! OLED init failed!\r\n");
+        }
+#endif
         
         //setup UDP server
         udpio_init();
@@ -520,4 +551,50 @@ void ICACHE_FLASH_ATTR udpio_init(void) {
     udp_recv(pcb, udp_recv_cb, NULL);
 }
 
+#if defined(USE_DISPLAY)
+void ICACHE_FLASH_ATTR do_draw(OLED_messages msg, char *str) {
+    int8_t w;
+    switch (msg) {
+      case ODrawInit:
+        ssd1306_select_font(0, 1);
+        ssd1306_fill_rectangle(0, 0, 0, 128, 12, SSD1306_COLOR_WHITE);
+        w = ssd1306_measure_string(0, str);
+        ssd1306_draw_string(0, (ssd1306_get_width(0) - w) / 2, 2, str, SSD1306_COLOR_BLACK, SSD1306_COLOR_TRANSPARENT);
+        ssd1306_refresh(0, true);
+        break;
+      case ODrawConnected:
+        ssd1306_select_font(0, 1);
+        ssd1306_fill_rectangle(0, 0, 0, 128, 12, SSD1306_COLOR_WHITE);
+        w = ssd1306_measure_string(0, str);
+        ssd1306_draw_string(0, (ssd1306_get_width(0) - w) / 2, 1, str, SSD1306_COLOR_BLACK, SSD1306_COLOR_TRANSPARENT);
+        ssd1306_refresh(0, false);
+        break;
+      case ODrawStation:
+        ssd1306_fill_rectangle(0, 0, 16, 128, 40, SSD1306_COLOR_BLACK);
+        ssd1306_select_font(0, 0);
+        ssd1306_draw_string(0, 0, 16, STR_playing, SSD1306_COLOR_WHITE, SSD1306_COLOR_BLACK);
+        ssd1306_select_font(0, 1);
+        ssd1306_draw_string(0, 0, 28, streamHost, SSD1306_COLOR_WHITE, SSD1306_COLOR_BLACK);
+        ssd1306_draw_string(0, 0, 40, streamPath, SSD1306_COLOR_WHITE, SSD1306_COLOR_BLACK);
+        ssd1306_refresh(0, false);
+        break;
+      case ODrawRate:
+        ssd1306_select_font(0, 0);
+        ssd1306_draw_string(0, 64, 16, str, SSD1306_COLOR_WHITE, SSD1306_COLOR_BLACK);
+        ssd1306_refresh(0, false);
+        break;
+      case ODrawBuffer:
+        ssd1306_select_font(0, 0);
+        ssd1306_draw_string(0, 0, 56, str, SSD1306_COLOR_WHITE, SSD1306_COLOR_BLACK);
+        ssd1306_refresh(0, false);
+        break;
+      default:
+        break;
+    }
+}
+#endif
 
+/*
+ * vvvvvvvvvvvvvvvvvvvvvv
+http://tech.scargill.net/qd-tech-displays-on-the-esp8266/
+*/
