@@ -6,12 +6,14 @@
 # TODO: - fehlende Funktionen implementieren (L,M),
 #       - Parameter implementieren
 #
+# Version 0.1
 import sys      #for exit
 import socket   #for sockets
 import os
 
-#UDP_HOST = "192.168.178.39"
-UDP_HOST = 'ESP-9BCCEF'
+#UDP_HOST = "192.168.xxx.xxx"
+#UDP_HOST = 'ESP-9BCCEF'     # esp01-module (verbaut)
+UDP_HOST = 'ESP_9E7CBD'     # esp07-module (Steckbrett)
 UDP_PORT = 15678
 
 serverList = {1:['ClassicEurodance','{pub7.di.fm:80/di_classiceurodance}'],
@@ -19,7 +21,7 @@ serverList = {1:['ClassicEurodance','{pub7.di.fm:80/di_classiceurodance}'],
               3:['Alternative NL','{icecast.omroep.nl:80/3fm-sb-mp3}'],
               4:['Darkwave Radio','{darkwaveradio.com:8000/autodj}'],
               5:['ebm-Radio','{www.ebm-radio.org:7000/}'],
-# hostname zu lang:
+# hostname too long:
 #              6:['PsyTrancePowerRadio','{streaming201.radionomy.com:80/PsyTrance-Power-radio}'],
 #              7:['','{streaming201.radionomy.com:80/Goth-N-Metal}'],
               6:['PsyTrancePowerRadio','{31.12.64.201:80/PsyTrance-Power-radio}'],
@@ -49,7 +51,7 @@ def SendStation(msg):
         except (socket.error, msg):
             print('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
             sys.exit(2)
-    s.close()                       # UDP -> nötig?
+    s.close()                       # UDP -> noetig?
     if retry>=3:
         ret='TimeOut'
     return ret
