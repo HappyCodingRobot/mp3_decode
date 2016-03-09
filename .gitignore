@@ -16,7 +16,8 @@
 .output
 
 # IDE files to ignore (Netbeans, Eclipse)
-nbproject/private/
+#nbproject/private/
+nbproject
 .classpath
 .project
 .settings

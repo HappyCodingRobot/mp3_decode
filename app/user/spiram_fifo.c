@@ -61,6 +61,18 @@ int ICACHE_FLASH_ATTR spiRamFifoInit() {
 	return (spiRamTest());
 }
 
+//
+void  ICACHE_FLASH_ATTR spiRamClr() {
+    xSemaphoreTake(mux, portMAX_DELAY);
+    fifoRpos=0;
+    fifoWpos=0;
+    //fifoRpos=fifoWpos;
+    fifoFill=0;
+    fifoOvfCnt=0;
+    fifoUdrCnt=0;
+    xSemaphoreGive(mux);
+}
+
 //Read bytes from the FIFO
 void ICACHE_FLASH_ATTR spiRamFifoRead(char *buff, int len) {
 	int n;

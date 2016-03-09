@@ -213,7 +213,8 @@ void ICACHE_FLASH_ATTR set_dac_sample_rate(int rate) {
 	i2sSetRate(rate);
 }
 
-static enum  mad_flow ICACHE_FLASH_ATTR input(struct mad_stream *stream) {
+typedef enum mad_flow mad__flow;    // additional typedef as bugfix for netbeans parser..
+static mad__flow ICACHE_FLASH_ATTR input(struct mad_stream *stream) {
 	int n, i;
 	int rem, fifoLen;
 	//Shift remaining contents of buf to the front
@@ -245,11 +246,10 @@ static enum  mad_flow ICACHE_FLASH_ATTR input(struct mad_stream *stream) {
 }
 
 //Routine to print out an error
-static enum mad_flow ICACHE_FLASH_ATTR error(void *data, struct mad_stream *stream, struct mad_frame *frame) {
+static mad__flow ICACHE_FLASH_ATTR error(void *data, struct mad_stream *stream, struct mad_frame *frame) {
 	printf("dec err 0x%04x (%s)\n", stream->error, mad_stream_errorstr(stream));
 	return MAD_FLOW_CONTINUE;
 }
-
 
 //This is the main mp3 decoding task. It will grab data from the input buffer FIFO in the SPI ram and
 //output it to the I2S port.
@@ -346,15 +346,15 @@ int ICACHE_FLASH_ATTR openConn(const char *streamHost, const char *streamPath) {
 	}
 }
 
-
 //Reader task. This will try to read data from a TCP socket into the SPI fifo buffer.
 void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
 	int madRunning=0;
+        xTaskHandle xHandleMad;
 	char wbuf[256];
 	int n, l, inBuf;
 	int t;
 	int fd;
-	int c = 0;
+	//int c = 0;
 	while(1) {
 		fd = openConn(streamHost, streamPath);
                 do_draw(ODrawStation, NULL);
@@ -362,13 +362,18 @@ void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
 		do {
 			n = read(fd, wbuf, sizeof(wbuf));
 			if (n > 0) spiRamFifoWrite(wbuf, n);
-			c += n;
+			//c += n;
 			if ((!madRunning) && (spiRamFifoFree() < spiRamFifoLen()/2)) {
 				//Buffer is filled. Start up the MAD task. Yes, the 2100 bytes of stack is a fairly large amount but MAD seems to need it.
-				if (xTaskCreate(tskmad, "tskmad", 2100, NULL, PRIO_MAD, NULL)!=pdPASS) printf("ERROR creating MAD task! Out of memory?\n");
+				if (xTaskCreate(tskmad, "tskmad", 2100, NULL, PRIO_MAD, &xHandleMad)!=pdPASS) printf("ERROR creating MAD task! Out of memory?\n");
+				//if (xTaskCreate(tskmad, "tskmad", 2100, NULL, PRIO_MAD, NULL)!=pdPASS) printf("ERROR creating MAD task! Out of memory?\n");
 				madRunning=1;
 			}
-			
+                        
+			if (xTaskIsTaskSuspended(xHandleMad) && (spiRamFifoFree() < spiRamFifoLen()/4)) {
+                            vTaskResume(xHandleMad);
+                        }
+                        
 			t=(t+1)&255;
 			if (t==0) {
                           printf("Buffer fill %d, DMA underrun ct %d, buff underrun ct %d\n", spiRamFifoFill(), (int)i2sGetUnderrunCnt(), bufUnderrunCt);
@@ -378,8 +383,14 @@ void ICACHE_FLASH_ATTR tskreader(void *pvParameters) {
                         }
 		} while (n>0 && streamNewAddr==0);
 		close(fd);
-                streamNewAddr=0;
 		printf("Connection closed.\n");
+                if (streamNewAddr!=0) {
+                    streamNewAddr=0;
+                    vTaskSuspend(xHandleMad);
+                    printf("tskmad() suspended.\n");
+                    spiRamClr();
+                    printf("spiBuffer cleared.\n");
+                }
 	}
 }
 

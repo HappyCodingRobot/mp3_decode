@@ -4,10 +4,9 @@
 /*
 Define the access point name and its password here.
 */
-//#define AP_NAME "HOMEAP"
-//#define AP_PASS "01234567890"
-#define AP_NAME "Maschinenzimmer"
-#define AP_PASS "3747541222109123"
+#define AP_NAME "HOMEAP"
+#define AP_PASS "01234567890"
+
 
 /*
 {icecast.omroep.nl:80/3fm-sb-mp3}

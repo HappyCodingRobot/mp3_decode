@@ -69,7 +69,8 @@ int ICACHE_FLASH_ATTR openConn(const char *streamHost, const char *streamPath);
 //Reader task. This will try to read data from a TCP socket into the SPI fifo buffer.
 void ICACHE_FLASH_ATTR tskreader(void *pvParameters);
 
-//Simple task to connect to an access point, initialize i2s and fire up the reader task.
+//Simple task to connect to an access point, initialize i2s and fire up the reader task. Will be
+//deleted after this.
 void ICACHE_FLASH_ATTR tskconnect(void *pvParameters);
 
 void ICACHE_FLASH_ATTR user_init(void);
